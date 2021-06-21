@@ -13,7 +13,8 @@
     "dependencies": {
         "console-table-printer": "^2.9.0",
         "console.table": "^0.10.0",
-        "inquirer": "^0.2.3",
+        "dotenv": "^10.0.0",
+        "inquirer": "^8.1.1",
         "mysql": "^2.18.1",
         "password": "^0.1.1",
         "util": "^0.12.4"
