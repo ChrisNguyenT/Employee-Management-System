@@ -28,7 +28,7 @@ function start() {
             name: 'option',
             type: 'list',
             message: 'MAIN MENU: What would you like to access?',
-            choices: ['Employees', 'Departments', 'Roles', 'Exit'],
+            choices: ['Employees', 'Departments', 'Roles', 'EXIT'],
         })
         .then((response) => {
             // Options
@@ -42,7 +42,7 @@ function start() {
                 case 'Roles':
                     roles();
                     break;
-                case 'Exit':
+                case 'EXIT':
                     console.log('\nGoodbye\n\n');
                     connection.end();
                     break;
@@ -85,7 +85,7 @@ function employees() {
 
 // Function to view all employees
 function viewEmployees() {
-    const query = 'SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.department_name FROM employee LEFT JOIN role on employee.role_id = role.id LEFT JOIN department on role.department_id = department.id';
+    const query = 'SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.department_name, CONCAT (employee.first_name, " ", employee.last_name) AS manager_name FROM employee LEFT JOIN role on employee.role_id = role.id LEFT JOIN department on role.department_id = department.id';
     connection.query(query, (err, res) => {
         if (err) throw err;
         table(res);
@@ -125,11 +125,11 @@ function addEmployee(manager) {
                 message: `What is the employee's role?`,
                 name: 'employeeRole',
                 choices() {
-                    const choiceArray = [];
+                    const choiceList = [];
                     res.forEach(({ title }) => {
-                        choiceArray.push(title);
+                        choiceList.push(title);
                     });
-                    return choiceArray;
+                    return choiceList;
                 },
             },
             {
@@ -137,11 +137,11 @@ function addEmployee(manager) {
                 message: `Who is the manager?`,
                 name: 'manager',
                 choices() {
-                    const choiceArray = ['None'];
+                    const choiceList = ['None'];
                     manager.forEach(({ name }) => {
-                        choiceArray.push(name);
+                        choiceList.push(name);
                     });
-                    return choiceArray;
+                    return choiceList;
                 },
             },
             ])
