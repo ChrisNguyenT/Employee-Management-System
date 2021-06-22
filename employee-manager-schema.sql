@@ -19,7 +19,7 @@ CREATE TABLE role (
     PRIMARY KEY (id)
 );
 
-INSERT INTO `role` VALUES (1,'Manager',80000.00,1),(2,'Assistant Manager',65000.00,1),(3,'HR Representative',50000.00,1),(4,'Intern',20000.00,1),(5,'Sales Representative',55000.00,4),(6,'Technician',65000.00,5);
+INSERT INTO `role` VALUES (1,'Manager',80000.00,1),(2,'Assistant Manager',65000.00,1),(3,'HR Representative',50000.00,1),(4,'Intern',20000.00,3),(5,'Sales Representative',55000.00,4),(6,'Technician',65000.00,5);
 
 CREATE TABLE employee (
     id INT AUTO_INCREMENT NOT NULL,
