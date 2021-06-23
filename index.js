@@ -59,7 +59,7 @@ function employees() {
             name: 'option',
             type: 'list',
             message: 'What would you like to do?',
-            choices: ['View all employees', 'Add new employee', 'Delete current employee', 'Change employee roles', 'MAIN MENU'],
+            choices: ['View all employees', 'Add new employee', 'Delete current employee', 'Update employee', 'MAIN MENU'],
         })
         .then((response) => {
             // Options
@@ -73,7 +73,7 @@ function employees() {
                 case 'Delete current employee':
                     deleteEmployee();
                     break;
-                case 'Change employee roles':
+                case 'Update employee':
                     changeEmployee();
                     break;
                 case 'MAIN MENU':
@@ -192,6 +192,11 @@ function addData(id, response, managerId) {
     )
 }
 
+// Delete employee
+
+// Update employee
+
+
 // DEPARTMENT MANAGEMENT
 function departments() {
     console.log('\n\n--------Department Menu--------\n');
@@ -276,6 +281,10 @@ function viewEmployeeByDepartment(response) {
         departments();
     });
 }
+
+// Add department
+
+// Delete department
 
 // ROLES MANAGEMENT
 function roles() {
@@ -362,6 +371,9 @@ function viewEmployeeByRole(response) {
     });
 }
 
+// Add role
+
+// Delete role
 
 // 
 // 
