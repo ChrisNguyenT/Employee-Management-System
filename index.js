@@ -85,7 +85,7 @@ function employees() {
 
 // Function to view all employees
 function viewEmployees() {
-    const query = 'SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.department_name, CONCAT (employee.first_name, " ", employee.last_name) AS manager_name FROM employee LEFT JOIN role on employee.role_id = role.id LEFT JOIN department on role.department_id = department.id';
+    const query = 'SELECT employee.id, employee.first_name AS "First Name", employee.last_name AS "Last Name", role.title AS Role, role.salary AS Salary, department.department_name AS Department, CONCAT(manager.first_name, " ", manager.last_name) AS Manager FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.department_id = department.id LEFT JOIN employee manager ON manager.id = employee.manager_id';
     connection.query(query, (err, res) => {
         if (err) throw err;
         table(res);
@@ -95,7 +95,7 @@ function viewEmployees() {
 
 // Function to add a new employee
 function newEmployee() {
-    const query = 'SELECT CONCAT (employee.first_name, " ", employee.last_name) as name FROM employee'
+    const query = 'SELECT CONCAT (employee.first_name, " ", employee.last_name) AS name FROM employee'
 
     connection.query(query, (err, res) => {
         if (err) throw err;
@@ -201,7 +201,7 @@ function departments() {
             name: 'option',
             type: 'list',
             message: 'What would you like to do?',
-            choices: ['View all departments', 'View employees by department', 'Add', 'Delete', 'MAIN MENU'],
+            choices: ['View all departments', 'View employees by department', 'Add Department', 'Delete Department', 'MAIN MENU'],
         })
         .then((response) => {
             // Options
@@ -212,10 +212,10 @@ function departments() {
                 case 'View employees by department':
                     viewEmployeeDepartment();
                     break;
-                case 'Add':
+                case 'Add Department':
                     addDepartment();
                     break;
-                case 'Delete':
+                case 'Delete Department':
                     deleteDepartment();
                     break;
                 case 'MAIN MENU':
@@ -227,7 +227,7 @@ function departments() {
 
 // View all departments
 function viewDepartments() {
-    const query = 'SELECT department.id, department.department_name FROM department';
+    const query = 'SELECT department.id, department.department_name AS Name FROM department';
     connection.query(query, (err, res) => {
         if (err) throw err;
         table(res);
@@ -266,11 +266,11 @@ function viewEmployeeDepartment() {
 }
 
 function viewEmployeeByDepartment(response) {
-    const query = 'SELECT employee.id, CONCAT (employee.first_name, " ", employee.last_name) AS name, role.title, department.department_name AS department, role.salary FROM employee LEFT JOIN role on employee.role_id = role.id LEFT JOIN department on role.department_id = department.id';
+    const query = 'SELECT employee.id, CONCAT (employee.first_name, " ", employee.last_name) AS Name, role.title AS Role, department.department_name AS Department, role.salary AS Salary FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.department_id = department.id';
     connection.query(query, (err, res) => {
         if (err) throw err;
         let updatedTable = res.filter((name) => {
-            return response.departmentName == name.department;
+            return response.departmentName == name.Department;
         })
         table(updatedTable);
         departments();
@@ -286,13 +286,16 @@ function roles() {
             name: 'option',
             type: 'list',
             message: 'What would you like to do?',
-            choices: ['View all roles', 'Add role', 'Delete role', 'MAIN MENU'],
+            choices: ['View all roles', 'View employees by role', 'Add role', 'Delete role', 'MAIN MENU'],
         })
         .then((response) => {
             // Options
             switch (response.option) {
                 case 'View all roles':
                     viewRoles();
+                    break;
+                case 'View employees by role':
+                    viewEmployeeRole();
                     break;
                 case 'Add role':
                     addRole();
@@ -309,7 +312,7 @@ function roles() {
 
 // View all roles
 function viewRoles() {
-    const query = 'SELECT role.id, role.title, role.salary FROM role';
+    const query = 'SELECT role.id, role.title AS Title, role.salary AS Salary FROM role';
     connection.query(query, (err, res) => {
         if (err) throw err;
         table(res);
@@ -317,7 +320,51 @@ function viewRoles() {
     });
 }
 
+// View employees by role
+function viewEmployeeRole() {
+    const query = 'SELECT * FROM role';
+    connection.query(query, (err, res) => {
+        if (err) throw err;
 
+        inquirer
+            .prompt([{
+                type: 'list',
+                message: `Which role would you like to view?`,
+                name: 'roleName',
+                choices() {
+                    const choiceList = ['Cancel'];
+                    res.forEach(({ title }) => {
+                        choiceList.push(title);
+                    });
+                    return choiceList;
+                },
+            },
+            ])
+            .then((response) => {
+                if (response.roleName == 'Cancel') {
+                    roles();
+                } else {
+                    viewEmployeeByRole(response);
+                }
+            })
+    });
+}
+
+function viewEmployeeByRole(response) {
+    const query = 'SELECT employee.id, CONCAT (employee.first_name, " ", employee.last_name) AS Name, role.title AS Role, department.department_name AS Department, role.salary AS Salary FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.department_id = department.id';
+    connection.query(query, (err, res) => {
+        if (err) throw err;
+        let updatedTable = res.filter((name) => {
+            return response.roleName == name.Role;
+        })
+        table(updatedTable);
+        roles();
+    });
+}
+
+
+// 
+// 
 // Function to print tables to console
 function table(values) {
     if (values.length !== 0) {
