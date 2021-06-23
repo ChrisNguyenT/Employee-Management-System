@@ -22,7 +22,6 @@ start();
 // TITLE
 function start() {
     console.log('\n\n--------EMPLOYEE MANAGEMENT SYSTEM--------\n\n');
-
     inquirer
         .prompt({
             name: 'option',
@@ -53,13 +52,12 @@ function start() {
 // EMPLOYEE MANAGEMENT
 function employees() {
     console.log('\n\n--------Employee Menu--------\n');
-
     inquirer
         .prompt({
             name: 'option',
             type: 'list',
             message: 'What would you like to do?',
-            choices: ['View all employees', 'Add new employee', 'Delete current employee', 'Update employee', 'MAIN MENU'],
+            choices: ['View all employees', 'Add new employee', 'Remove current employee', 'Update employee', 'MAIN MENU'],
         })
         .then((response) => {
             // Options
@@ -70,7 +68,7 @@ function employees() {
                 case 'Add new employee':
                     newEmployee();
                     break;
-                case 'Delete current employee':
+                case 'Remove current employee':
                     deleteEmployee();
                     break;
                 case 'Update employee':
@@ -96,10 +94,8 @@ function viewEmployees() {
 // Function to add a new employee
 function newEmployee() {
     const query = 'SELECT CONCAT (employee.first_name, " ", employee.last_name) AS name FROM employee'
-
     connection.query(query, (err, res) => {
         if (err) throw err;
-
         addEmployee(res)
     })
 }
@@ -108,22 +104,21 @@ function addEmployee(manager) {
     const query = 'SELECT * FROM role';
     connection.query(query, (err, res) => {
         if (err) throw err;
-
         inquirer
             .prompt([{
                 type: 'input',
                 message: `What is the employee's first name?`,
-                name: 'employeeFirstName',
+                name: 'first_name',
             },
             {
                 type: 'input',
                 message: `What is the employee's last name?`,
-                name: 'employeeLastName',
+                name: 'last_name',
             },
             {
                 type: 'list',
                 message: `What is the employee's role?`,
-                name: 'employeeRole',
+                name: 'employee_role',
                 choices() {
                     const choiceList = [];
                     res.forEach(({ title }) => {
@@ -148,51 +143,91 @@ function addEmployee(manager) {
             .then((response) => {
                 connection.query(`SELECT employee.id, CONCAT (employee.first_name, " ", employee.last_name) AS name FROM employee`, (err, res) => {
                     if (err) throw err;
-
-                    let managerId;
-
+                    let managerID;
                     if (response.manager !== 'None') {
-                        let managerInfo = res.filter((id) => {
+                        let manager_data = res.filter((id) => {
                             return response.manager == id.name
                         })
-
-                        managerId = JSON.parse(JSON.stringify(managerInfo))[0].id
+                        managerID = JSON.parse(JSON.stringify(manager_data))[0].id
                     } else {
-                        managerId = null;
+                        managerID = null;
                     }
 
                     connection.query(`SELECT role.id, role.title FROM role`, (err, res) => {
                         if (err) throw err;
-
                         let roleInfo = res.filter((id) => {
-                            return response.employeeRole == id.title
+                            return response.employee_role == id.title
                         });
                         let roleId = JSON.parse(JSON.stringify(roleInfo))[0].id
-                        addData(roleId, response, managerId);
+                        addData(roleId, response, managerID);
                     })
-
                 })
             })
     })
 }
 
-function addData(id, response, managerId) {
+function addData(id, response, managerID) {
     connection.query('INSERT INTO employee SET?',
         {
-            first_name: response.employeeFirstName,
-            last_name: response.employeeLastName,
+            first_name: response.first_name,
+            last_name: response.last_name,
             role_id: id,
-            manager_id: managerId
+            manager_id: managerID
         },
         (err) => {
             if (err) throw err;
-            console.log(`\n---${response.employeeFirstName} ${response.employeeLastName} has been added to your database!---`)
+            console.log(`\n---${response.first_name} ${response.last_name} has been added to your database!---`)
             employees();
         }
     )
 }
 
-// Delete employee
+// Function to delete an employee
+function deleteEmployee() {
+    const query = 'SELECT CONCAT(employee.first_name, " ", employee.last_name) as name FROM employee';
+    connection.query(query, (err, res) => {
+        if (err) throw err;
+        inquirer
+            .prompt([{
+                type: 'list',
+                message: `Which employee would you like to remove from the database?`,
+                name: 'employee_name',
+                choices() {
+                    const choiceList = ['Cancel'];
+                    res.forEach(({ name }) => {
+                        choiceList.push(name);
+                    });
+                    return choiceList
+                },
+            },
+            ])
+            .then((response) => {
+                if (response.employee_name == 'Cancel') {
+                    employees();
+                } else {
+                    const query = `SELECT employee.id, CONCAT (employee.first_name, " ", employee.last_name) AS name FROM employee`;
+                    connection.query(query, (err, res) => {
+                        if (err) throw err;
+                        let current_employee = res.filter((employee) => {
+                            return response.employee_name == employee.name;
+                        })
+                        let id = JSON.parse(JSON.stringify(current_employee))[0].id
+                        deleteEmployeeById(id, response.employee_name);
+                    });
+                }
+            })
+    });
+}
+
+function deleteEmployeeById(id, employee) {
+    const query = `DELETE FROM employee WHERE id=${id}`;
+
+    connection.query(query, (err, res) => {
+        if (err) throw err;
+        console.log(`\n---You have removed ${employee} from the database.---`);
+        employees();
+    });
+}
 
 // Update employee
 
@@ -262,7 +297,7 @@ function viewEmployeeDepartment() {
             ])
             .then((response) => {
                 if (response.departmentName == 'Cancel') {
-                    start();
+                    departments();
                 } else {
                     viewEmployeeByDepartment(response);
                 }
@@ -274,11 +309,11 @@ function viewEmployeeByDepartment(response) {
     const query = 'SELECT employee.id, CONCAT (employee.first_name, " ", employee.last_name) AS Name, role.title AS Role, department.department_name AS Department, role.salary AS Salary FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.department_id = department.id';
     connection.query(query, (err, res) => {
         if (err) throw err;
-        let updatedTable = res.filter((name) => {
+        let current_table = res.filter((name) => {
             return response.departmentName == name.Department;
         })
-        table(updatedTable);
-        departments();
+        table(current_table);
+        viewEmployeeDepartment();
     });
 }
 
@@ -339,7 +374,7 @@ function viewEmployeeRole() {
             .prompt([{
                 type: 'list',
                 message: `Which role would you like to view?`,
-                name: 'roleName',
+                name: 'role_name',
                 choices() {
                     const choiceList = ['Cancel'];
                     res.forEach(({ title }) => {
@@ -350,7 +385,7 @@ function viewEmployeeRole() {
             },
             ])
             .then((response) => {
-                if (response.roleName == 'Cancel') {
+                if (response.role_name == 'Cancel') {
                     roles();
                 } else {
                     viewEmployeeByRole(response);
@@ -363,11 +398,11 @@ function viewEmployeeByRole(response) {
     const query = 'SELECT employee.id, CONCAT (employee.first_name, " ", employee.last_name) AS Name, role.title AS Role, department.department_name AS Department, role.salary AS Salary FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.department_id = department.id';
     connection.query(query, (err, res) => {
         if (err) throw err;
-        let updatedTable = res.filter((name) => {
-            return response.roleName == name.Role;
+        let current_table = res.filter((name) => {
+            return response.role_name == name.Role;
         })
-        table(updatedTable);
-        roles();
+        table(current_table);
+        viewEmployeeRole();
     });
 }
 
