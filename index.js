@@ -536,7 +536,69 @@ function addDepartment() {
         })
 }
 
-// Delete department
+// Function to delete departments
+function deleteDepartment() {
+    const query = 'SELECT * FROM department';
+    connection.query(query, (err, res) => {
+        if (err) throw err;
+        inquirer
+            .prompt({
+                type: 'list',
+                message: 'Which department would you like to remove from the database?',
+                name: 'department',
+                choices() {
+                    const choiceList = ['Cancel'];
+                    res.forEach(({ department_name }) => {
+                        choiceList.push(department_name);
+                    });
+                    return choiceList;
+                },
+            })
+            .then((response) => {
+                const query = `SELECT department.id, department.department_name FROM department`;
+                connection.query(query, (err, res) => {
+                    if (err) throw err;
+                    if (response.department == 'Cancel') {
+                        departments();
+                    } else {
+                        let departmentID = res.filter((role) => {
+                            return response.department == role.department_name;
+                        })
+                        let id = JSON.parse(JSON.stringify(departmentID))[0].id
+                        removeDepartmentData(id, response);
+                    }
+                });
+            })
+    });
+}
+
+// Function to update the database after deleting the database
+function removeDepartmentData(departmentID, response) {
+    const query = 'SELECT employee.id, employee.role_id, role.department_id FROM employee LEFT JOIN role on employee.role_id = role.id LEFT JOIN department on role.department_id = department.id';
+    connection.query(query, (err, res) => {
+        let id;
+        if (err) throw err;
+        let employeeRoleID = res.filter((id) => {
+            return departmentID == id.department_id;
+        })
+        if (employeeRoleID[0] == null) {
+            id = 0;
+        } else {
+            id = JSON.parse(JSON.stringify(employeeRoleID))[0].department_id;
+        }
+        if (id == departmentID) {
+            console.log(`\n---Department cannot be deleted because there are employee(s) assigned to it. Please update the employee's roles---\n\n`);
+            deleteDepartment();
+        } else {
+            const query = `DELETE FROM department WHERE id=${departmentID}`;
+            connection.query(query, (err, res) => {
+                if (err) throw err;
+                console.log(`\n---You have removed '${response.department}' from the database---\n\n`);
+                departments();
+            });
+        }
+    })
+}
 
 // ROLES MANAGEMENT
 function roles() {
@@ -621,7 +683,7 @@ function viewEmployeeByRole(response) {
     });
 }
 
-// Add role
+// Function to input new role information
 function addRole() {
     const query = 'SELECT * FROM department';
     connection.query(query, (err, res) => {
