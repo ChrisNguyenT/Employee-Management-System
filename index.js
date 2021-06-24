@@ -169,8 +169,8 @@ function addEmployee(manager) {
                             let roleInfo = res.filter((id) => {
                                 return response.employee_role == id.title
                             });
-                            let roleId = JSON.parse(JSON.stringify(roleInfo))[0].id
-                            addData(roleId, response, managerID);
+                            let roleID = JSON.parse(JSON.stringify(roleInfo))[0].id
+                            addData(roleID, response, managerID);
                         })
                     });
                 }
@@ -224,7 +224,7 @@ function deleteEmployee() {
                             return response.employee_name == employee.name;
                         })
                         let id = JSON.parse(JSON.stringify(current_employee))[0].id
-                        deleteEmployeeById(id, response.employee_name);
+                        removeEmployee(id, response.employee_name);
                     });
                 }
             })
@@ -232,7 +232,7 @@ function deleteEmployee() {
 }
 
 // Function to update the database with deleted employee
-function deleteEmployeeById(id, employee) {
+function removeEmployee(id, employee) {
     const query = `DELETE FROM employee WHERE id=${id}`;
     connection.query(query, (err, res) => {
         if (err) throw err;
@@ -353,7 +353,7 @@ function updateRole(id, res) {
         inquirer
             .prompt({
                 type: 'list',
-                message: 'Please enter the new role title.',
+                message: 'Please select the new role title.',
                 name: 'title',
                 choices() {
                     const choiceList = ['CANCEL'];
@@ -547,7 +547,7 @@ function deleteDepartment() {
                 message: 'Which department would you like to remove from the database?',
                 name: 'department',
                 choices() {
-                    const choiceList = ['Cancel'];
+                    const choiceList = ['CANCEL'];
                     res.forEach(({ department_name }) => {
                         choiceList.push(department_name);
                     });
@@ -558,14 +558,14 @@ function deleteDepartment() {
                 const query = `SELECT department.id, department.department_name FROM department`;
                 connection.query(query, (err, res) => {
                     if (err) throw err;
-                    if (response.department == 'Cancel') {
+                    if (response.department == 'CANCEL') {
                         departments();
                     } else {
                         let departmentID = res.filter((role) => {
                             return response.department == role.department_name;
                         })
                         let id = JSON.parse(JSON.stringify(departmentID))[0].id
-                        removeDepartmentData(id, response);
+                        removeDepartment(id, response);
                     }
                 });
             })
@@ -573,7 +573,7 @@ function deleteDepartment() {
 }
 
 // Function to update the database after deleting the database
-function removeDepartmentData(departmentID, response) {
+function removeDepartment(departmentID, response) {
     const query = 'SELECT employee.id, employee.role_id, role.department_id FROM employee LEFT JOIN role on employee.role_id = role.id LEFT JOIN department on role.department_id = department.id';
     connection.query(query, (err, res) => {
         let id;
@@ -587,13 +587,13 @@ function removeDepartmentData(departmentID, response) {
             id = JSON.parse(JSON.stringify(employeeRoleID))[0].department_id;
         }
         if (id == departmentID) {
-            console.log(`\n---Department cannot be deleted because there are employee(s) assigned to it. Please update the employee's roles---\n\n`);
+            console.log(`\n---'${response.department}' department cannot be deleted because there are employee(s) assigned to it. Please update the employee's roles first---\n\n`);
             deleteDepartment();
         } else {
             const query = `DELETE FROM department WHERE id=${departmentID}`;
             connection.query(query, (err, res) => {
                 if (err) throw err;
-                console.log(`\n---You have removed '${response.department}' from the database---\n\n`);
+                console.log(`\n---'${response.department}' department has been removed from the database---\n\n`);
                 departments();
             });
         }
@@ -729,7 +729,7 @@ function addRole() {
                             return response.department == id.department_name
                         });
                         let departmentID = JSON.parse(JSON.stringify(departmentData))[0].id;
-                        addNewRole(departmentID, response);
+                        updateNewRole(departmentID, response);
                     })
                 }
             })
@@ -737,7 +737,7 @@ function addRole() {
 }
 
 // Function to update database with new role
-function addNewRole(id, response) {
+function updateNewRole(id, response) {
     connection.query(`INSERT INTO role SET?`,
         {
             title: response.newRole,
@@ -752,16 +752,77 @@ function addNewRole(id, response) {
     )
 }
 
-// Delete role
+// Function to delete roles
+function deleteRole() {
+    const query = 'SELECT * FROM role';
+    connection.query(query, (err, res) => {
+        if (err) throw err;
+        inquirer
+            .prompt({
+                type: 'list',
+                message: 'Which role would you like to remove from the database?',
+                name: 'roleName',
+                choices() {
+                    const choiceList = ['CANCEL'];
+                    res.forEach(({ title }) => {
+                        choiceList.push(title);
+                    });
+                    return choiceList;
+                },
+            })
+            .then((response) => {
+                const query = 'SELECT role.id, role.title FROM role';
+                connection.query(query, (err, res) => {
+                    if (err) throw err;
+                    if (response.roleName == 'CANCEL') {
+                        roles();
+                    } else {
+                        let roleID = res.filter((role) => {
+                            return response.roleName == role.title;
+                        })
+                        let id = JSON.parse(JSON.stringify(roleID))[0].id
+                        removeRole(id, response);
+                    }
+                });
+            })
+    });
+}
 
-// 
+// Function to update database with deleted role
+function removeRole(roleID, response) {
+    const query = 'SELECT employee.id, employee.role_id FROM employee';
+    connection.query(query, (err, res) => {
+        let id;
+        if (err) throw err;
+        let employeeRoleId = res.filter((id) => {
+            return roleID == id.role_id;
+        })
+        if (employeeRoleId[0] == null) {
+            id = 0;
+        } else {
+            id = JSON.parse(JSON.stringify(employeeRoleId))[0].role_id;
+        }
+        if (id == roleID) {
+            console.log(`\n--'${response.roleName}' role cannot be deleted because there are employee(s) assigned to it. Please update the employee's roles first--\n\n`);
+            deleteRole();
+        } else {
+            const query = `DELETE FROM role WHERE id=${roleID}`;
+            connection.query(query, (err, res) => {
+                if (err) throw err;
+                console.log(`'\n---'${response.roleName}' role has been removed from the database---\n\n`);
+                roles();
+            });
+        }
+    })
+}
+
 // 
 // Function to print tables to console
 function table(values) {
     if (values.length !== 0) {
         printTable(values);
     } else {
-        console.log('No available data.');
+        console.log(`\n--No available data--\n\n`);
     };
 }
 
