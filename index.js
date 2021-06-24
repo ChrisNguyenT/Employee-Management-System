@@ -366,11 +366,11 @@ function updateRole(id, res) {
                     return choiceList;
                 },
             })
-            .then((user_input) => {
-                if (user_input.title == 'CANCEL') {
+            .then((response) => {
+                if (response == 'CANCEL') {
                     updateEmployeeData();
                 } else {
-                    const query = `UPDATE employee SET role_id = ${user_input.title} WHERE id = ${id}`
+                    const query = `UPDATE employee SET role_id = ${response.title} WHERE id = ${id}`
                     connection.query(query, (err, res) => {
                         if (err) throw err;
                         console.log(`\n---Employee role updated---\n\n`);
@@ -389,7 +389,7 @@ function updateManager(id, res) {
         inquirer
             .prompt([{
                 type: 'list',
-                message: `Please enter the new ${res.update}.`,
+                message: 'Please select the new manager.',
                 name: 'managerName',
                 choices() {
                     const choiceList = ['None'];
@@ -408,15 +408,15 @@ function updateManager(id, res) {
                     const query = `UPDATE employee SET manager_id = NULL WHERE id = ${id}`
                     connection.query(query, (err, res) => {
                         if (err) throw err;
-                        log(chalk.green('Success! Employee manager updated!'))
-                        start();
+                        console.log(`\n---Employee's manager is updated---\n\n`);
+                        updateEmployee();
                     });
                 } else {
                     const query = `UPDATE employee SET manager_id = ${response.managerName} WHERE id = ${id}`
                     connection.query(query, (err, res) => {
                         if (err) throw err;
-                        log(chalk.green('Success! Employee manager updated!'))
-                        start();
+                        console.log(`\n---Employee's manager is updated---\n\n`)
+                        updateEmployee();
                     });
                 }
             })
