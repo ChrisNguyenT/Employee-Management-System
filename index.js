@@ -507,6 +507,31 @@ function viewEmployeeByDepartment(response) {
 }
 
 // Add department
+function addDepartment() {
+    inquirer
+        .prompt(
+            {
+                type: 'input',
+                message: `What is the new department's name?`,
+                name: 'department',
+            },
+        )
+        .then((response) => {
+            if (response.department == '') {
+                departments();
+            } else {
+            connection.query(`INSERT INTO department SET?`,
+                {
+                    department_name: response.department
+                },
+                (err) => {
+                    if (err) throw err;
+                    console.log(`\n---'${response.department}' department has been added to your database---\n\n`);
+                    departments();
+                }
+            )}
+        })
+}
 
 // Delete department
 
