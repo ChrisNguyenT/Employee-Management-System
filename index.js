@@ -107,72 +107,73 @@ function addEmployee(manager) {
         if (err) throw err;
         inquirer
             .prompt([
-            {
-                type: 'input',
-                message: `What is the employee's first name?`,
-                name: 'first_name',
-            },
-            {
-                type: 'input',
-                message: `What is the employee's last name?`,
-                name: 'last_name',
-            },
-            {
-                type: 'list',
-                message: `What is the employee's role?`,
-                name: 'employee_role',
-                choices() {
-                    const choiceList = [];
-                    res.forEach(({ title }) => {
-                        choiceList.push(title);
-                    });
-                    return choiceList;
+                {
+                    type: 'input',
+                    message: `What is the employee's first name?`,
+                    name: 'first_name',
                 },
-            },
-            {
-                type: 'list',
-                message: `Who is the manager?`,
-                name: 'manager',
-                choices() {
-                    const choiceList = ['None'];
-                    manager.forEach(({ name }) => {
-                        choiceList.push(name);
-                    });
-                    return choiceList;
+                {
+                    type: 'input',
+                    message: `What is the employee's last name?`,
+                    name: 'last_name',
                 },
-            },
-            {
-                type: 'list',
-                message: 'Please CONFIRM the information:',
-                name: 'Confirmation',
-                choices: ['CONFIRM', 'CANCEL'],
-            },
+                {
+                    type: 'list',
+                    message: `What is the employee's role?`,
+                    name: 'employee_role',
+                    choices() {
+                        const choiceList = [];
+                        res.forEach(({ title }) => {
+                            choiceList.push(title);
+                        });
+                        return choiceList;
+                    },
+                },
+                {
+                    type: 'list',
+                    message: `Who is the manager?`,
+                    name: 'manager',
+                    choices() {
+                        const choiceList = ['None'];
+                        manager.forEach(({ name }) => {
+                            choiceList.push(name);
+                        });
+                        return choiceList;
+                    },
+                },
+                {
+                    type: 'list',
+                    message: 'Please CONFIRM the information:',
+                    name: 'Confirmation',
+                    choices: ['CONFIRM', 'CANCEL'],
+                },
             ])
             .then((response) => {
                 if (response.Confirmation == 'CANCEL') {
                     console.log(`\n--New employee was not added to the database--\n\n`);
                     employees();
                 } else {
-                connection.query(`SELECT employee.id, CONCAT (employee.first_name, " ", employee.last_name) AS name FROM employee`, (err, res) => {
-                    if (err) throw err;
-                    let managerID;
-                    if (response.manager !== 'None') {
-                        let manager_data = res.filter((id) => {
-                            return response.manager == id.name
-                        })
-                        managerID = JSON.parse(JSON.stringify(manager_data))[0].id
-                    } else {
-                        managerID = null;
-                    }
-                    connection.query(`SELECT role.id, role.title FROM role`, (err, res) => {
+                    connection.query(`SELECT employee.id, CONCAT (employee.first_name, " ", employee.last_name) AS name FROM employee`, (err, res) => {
                         if (err) throw err;
-                        let roleInfo = res.filter((id) => {
-                            return response.employee_role == id.title
-                        });
-                        let roleId = JSON.parse(JSON.stringify(roleInfo))[0].id
-                        addData(roleId, response, managerID);
-                    })
-                });}
+                        let managerID;
+                        if (response.manager !== 'None') {
+                            let manager_data = res.filter((id) => {
+                                return response.manager == id.name
+                            })
+                            managerID = JSON.parse(JSON.stringify(manager_data))[0].id
+                        } else {
+                            managerID = null;
+                        }
+                        connection.query(`SELECT role.id, role.title FROM role`, (err, res) => {
+                            if (err) throw err;
+                            let roleInfo = res.filter((id) => {
+                                return response.employee_role == id.title
+                            });
+                            let roleId = JSON.parse(JSON.stringify(roleInfo))[0].id
+                            addData(roleId, response, managerID);
+                        })
+                    });
+                }
             })
     })
 }
@@ -506,30 +507,32 @@ function viewEmployeeByDepartment(response) {
     });
 }
 
-// Add department
+// Function to add department
 function addDepartment() {
     inquirer
         .prompt(
             {
                 type: 'input',
-                message: `What is the new department's name?`,
+                message: `What is the new department's name? (Leave blank to cancel)`,
                 name: 'department',
             },
         )
         .then((response) => {
             if (response.department == '') {
+                console.log(`\n--No department was added--\n\n`);
                 departments();
             } else {
-            connection.query(`INSERT INTO department SET?`,
-                {
-                    department_name: response.department
-                },
-                (err) => {
-                    if (err) throw err;
-                    console.log(`\n---'${response.department}' department has been added to your database---\n\n`);
-                    departments();
-                }
-            )}
+                connection.query(`INSERT INTO department SET?`,
+                    {
+                        department_name: response.department
+                    },
+                    (err) => {
+                        if (err) throw err;
+                        console.log(`\n---'${response.department}' department has been added to your database---\n\n`);
+                        departments();
+                    }
+                )
+            }
         })
 }
 
@@ -619,6 +622,73 @@ function viewEmployeeByRole(response) {
 }
 
 // Add role
+function addRole() {
+    const query = 'SELECT * FROM department';
+    connection.query(query, (err, res) => {
+        if (err) throw err;
+        inquirer
+            .prompt([
+                {
+                    type: 'input',
+                    message: `What is the title of the new role?`,
+                    name: 'newRole',
+                },
+                {
+                    type: 'input',
+                    message: `What is the new role's salary?`,
+                    name: 'salary',
+                },
+                {
+                    type: 'list',
+                    message: `Which department is this role under?`,
+                    name: 'department',
+                    choices() {
+                        const choiceList = [];
+                        res.forEach(({ department_name }) => {
+                            choiceList.push(department_name);
+                        });
+                        return choiceList;
+                    },
+                },
+                {
+                    type: 'list',
+                    message: 'Please CONFIRM the information:',
+                    name: 'Confirmation',
+                    choices: ['CONFIRM', 'CANCEL'],
+                }])
+            .then((response) => {
+                if (response.Confirmation == 'CANCEL') {
+                    console.log(`\n--New role was not added to the database--\n\n`);
+                    roles();
+                } else {
+                    connection.query(`SELECT department.id, department.department_name FROM department`, (err, res) => {
+                        if (err) throw err;
+                        let departmentData = res.filter((id) => {
+                            return response.department == id.department_name
+                        });
+                        let departmentID = JSON.parse(JSON.stringify(departmentData))[0].id;
+                        addNewRole(departmentID, response);
+                    })
+                }
+            })
+    })
+}
+
+// Function to update database with new role
+function addNewRole(id, response) {
+    connection.query(`INSERT INTO role SET?`,
+        {
+            title: response.newRole,
+            salary: response.salary,
+            department_id: id,
+        },
+        (err) => {
+            if (err) throw err;
+            console.log(`\n---'${response.newRole}' role has been added to your database---\n\n`);
+            roles();
+        }
+    )
+}
 
 // Delete role
 
