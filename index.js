@@ -338,7 +338,7 @@ function updateName(id, res) {
                 connection.query(query, (err, res) => {
                     if (err) throw err;
                     console.log(`\n---Employee name updated---\n\n`)
-                    updateEmployeeData();
+                    updateEmployee();
                 })
             };
         })
@@ -394,11 +394,11 @@ function updateManager(id, res) {
                 choices() {
                     const choiceList = ['None'];
                     response.forEach(({ managerName, id }) => {
-                        var choiceObject = {
+                        var manager_object = {
                             name: managerName,
                             value: id,
                         }
-                        choiceList.push(choiceObject);
+                        choiceList.push(manager_object);
                     });
                     return choiceList;
                 },
