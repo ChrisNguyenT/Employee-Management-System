@@ -57,7 +57,7 @@ function employees() {
             name: 'option',
             type: 'list',
             message: 'What would you like to do?',
-            choices: ['View all employees', 'Add new employee', 'Remove current employee', 'Update employee', 'MAIN MENU'],
+            choices: ['View all employees', 'Add new employee', 'Remove current employee', 'Update employee information', 'MAIN MENU'],
         })
         .then((response) => {
             // Options
@@ -71,8 +71,8 @@ function employees() {
                 case 'Remove current employee':
                     deleteEmployee();
                     break;
-                case 'Update employee':
-                    changeEmployee();
+                case 'Update employee information':
+                    updateEmployee();
                     break;
                 case 'MAIN MENU':
                     start();
@@ -100,12 +100,14 @@ function newEmployee() {
     })
 }
 
+// Function to add employee information
 function addEmployee(manager) {
     const query = 'SELECT * FROM role';
     connection.query(query, (err, res) => {
         if (err) throw err;
         inquirer
-            .prompt([{
+            .prompt([
+            {
                 type: 'input',
                 message: `What is the employee's first name?`,
                 name: 'first_name',
@@ -139,8 +141,18 @@ function addEmployee(manager) {
                     return choiceList;
                 },
             },
+            {
+                type: 'list',
+                message: 'Please CONFIRM the information:',
+                name: 'Confirmation',
+                choices: ['CONFIRM', 'CANCEL'],
+            },
             ])
             .then((response) => {
+                if (response.Confirmation == 'CANCEL') {
+                    console.log(`\n--New employee was not added to the database--\n\n`);
+                    employees();
+                } else {
                 connection.query(`SELECT employee.id, CONCAT (employee.first_name, " ", employee.last_name) AS name FROM employee`, (err, res) => {
                     if (err) throw err;
                     let managerID;
@@ -152,7 +164,6 @@ function addEmployee(manager) {
                     } else {
                         managerID = null;
                     }
-
                     connection.query(`SELECT role.id, role.title FROM role`, (err, res) => {
                         if (err) throw err;
                         let roleInfo = res.filter((id) => {
@@ -161,11 +172,12 @@ function addEmployee(manager) {
                         let roleId = JSON.parse(JSON.stringify(roleInfo))[0].id
                         addData(roleId, response, managerID);
                     })
-                })
+                });}
             })
     })
 }
 
+// Function to push new employee information
 function addData(id, response, managerID) {
     connection.query('INSERT INTO employee SET?',
         {
@@ -176,7 +188,7 @@ function addData(id, response, managerID) {
         },
         (err) => {
             if (err) throw err;
-            console.log(`\n---${response.first_name} ${response.last_name} has been added to your database!---`)
+            console.log(`\n---${response.first_name} ${response.last_name} has been added to your database!---\n\n`)
             employees();
         }
     )
@@ -188,21 +200,20 @@ function deleteEmployee() {
     connection.query(query, (err, res) => {
         if (err) throw err;
         inquirer
-            .prompt([{
+            .prompt({
                 type: 'list',
                 message: `Which employee would you like to remove from the database?`,
                 name: 'employee_name',
                 choices() {
-                    const choiceList = ['Cancel'];
+                    const choiceList = ['CANCEL'];
                     res.forEach(({ name }) => {
                         choiceList.push(name);
                     });
                     return choiceList
                 },
-            },
-            ])
+            })
             .then((response) => {
-                if (response.employee_name == 'Cancel') {
+                if (response.employee_name == 'CANCEL') {
                     employees();
                 } else {
                     const query = `SELECT employee.id, CONCAT (employee.first_name, " ", employee.last_name) AS name FROM employee`;
@@ -219,23 +230,203 @@ function deleteEmployee() {
     });
 }
 
+// Function to update the database with deleted employee
 function deleteEmployeeById(id, employee) {
     const query = `DELETE FROM employee WHERE id=${id}`;
-
     connection.query(query, (err, res) => {
         if (err) throw err;
-        console.log(`\n---You have removed ${employee} from the database.---`);
+        console.log(`\n---You have removed ${employee} from the database---\n\n`);
         employees();
     });
 }
 
-// Update employee
+// Function to update employee information
+function updateEmployee() {
+    const query = 'SELECT CONCAT(employee.first_name, " ", employee.last_name) as name FROM employee';
+    connection.query(query, (err, res) => {
+        if (err) throw err;
+        inquirer
+            .prompt({
+                type: 'list',
+                message: `Which employee would you like to update?`,
+                name: 'employee_name',
+                choices() {
+                    const choiceList = ['CANCEL'];
+                    res.forEach(({ name }) => {
+                        choiceList.push(name);
+                    });
+                    return choiceList;
+                },
+            })
+            .then((response) => {
+                if (response.employee_name == 'CANCEL') {
+                    employees();
+                } else {
+                    const query = `SELECT employee.id, CONCAT (employee.first_name, " ", employee.last_name) AS name FROM employee`;
+                    connection.query(query, (err, res) => {
+                        if (err) throw err;
+                        let current_employee = res.filter((employee) => {
+                            return response.employee_name == employee.name;
+                        })
+                        let id = JSON.parse(JSON.stringify(current_employee))[0].id
+                        updateEmployeeData(id, response.employee_name);
+                    });
+                }
+            })
+    });
+}
+
+// Function to select which information to update for the specific employee
+function updateEmployeeData(id, name) {
+    inquirer
+        .prompt({
+            type: 'list',
+            message: `What information would you like to update for ${name}?`,
+            name: 'update',
+            choices: [{
+                name: 'First Name',
+                value: 'first_name'
+            },
+            {
+                name: 'Last Name',
+                value: 'last_name'
+            },
+            {
+                name: 'Role',
+                value: 'title'
+            },
+            {
+                name: 'Manager',
+                value: 'manager'
+            },
+            {
+                name: 'CANCEL',
+                value: ''
+            }],
+        })
+        .then((response) => {
+            if (response.update == '') {
+                updateEmployee();
+            } else {
+                if (response.update == 'first_name' || response.update == 'last_name') {
+                    updateName(id, response);
+                }
+                if (response.update == 'title') {
+                    updateRole(id, response);
+                }
+                if (response.update == 'manager') {
+                    updateManager(id, response);
+                }
+            }
+        })
+}
+
+// Function to update name
+function updateName(id, res) {
+    inquirer
+        .prompt({
+            type: 'input',
+            message: 'Please enter the updated name. (Leave blank to go back)',
+            name: 'name',
+        })
+        .then((response) => {
+            if (response.name == '') {
+                console.log(`\n--Update canceled--\n\n`);
+                updateEmployee();
+            } else {
+                const query = `UPDATE employee SET ${res.update} = '${response.name}' WHERE id = ${id}`
+                connection.query(query, (err, res) => {
+                    if (err) throw err;
+                    console.log(`\n---Employee name updated---\n\n`)
+                    updateEmployeeData();
+                })
+            };
+        })
+}
+
+// Function to update role
+function updateRole(id, res) {
+    const query = 'SELECT * FROM role'
+    connection.query(query, (err, response) => {
+        if (err) throw err;
+        inquirer
+            .prompt({
+                type: 'list',
+                message: 'Please enter the new role title.',
+                name: 'title',
+                choices() {
+                    const choiceList = ['CANCEL'];
+                    response.forEach(({ title, id }) => {
+                        var title_object = {
+                            name: title,
+                            value: id,
+                        }
+                        choiceList.push(title_object);
+                    });
+                    return choiceList;
+                },
+            })
+            .then((user_input) => {
+                if (user_input.title == 'CANCEL') {
+                    updateEmployeeData();
+                } else {
+                    const query = `UPDATE employee SET role_id = ${user_input.title} WHERE id = ${id}`
+                    connection.query(query, (err, res) => {
+                        if (err) throw err;
+                        console.log(`\n---Employee role updated---\n\n`);
+                        updateEmployee();
+                    });
+                }
+            })
+    })
+}
+
+// Function to update manager
+function updateManager(id, res) {
+    const query = `SELECT employee.id, CONCAT (employee.first_name, " ", employee.last_name) AS managerName FROM employee`
+    connection.query(query, (err, response) => {
+        if (err) throw err;
+        inquirer
+            .prompt([{
+                type: 'list',
+                message: `Please enter the new ${res.update}.`,
+                name: 'managerName',
+                choices() {
+                    const choiceList = ['None'];
+                    response.forEach(({ managerName, id }) => {
+                        var choiceObject = {
+                            name: managerName,
+                            value: id,
+                        }
+                        choiceList.push(choiceObject);
+                    });
+                    return choiceList;
+                },
+            },])
+            .then((response) => {
+                if (response.managerName == 'None') {
+                    const query = `UPDATE employee SET manager_id = NULL WHERE id = ${id}`
+                    connection.query(query, (err, res) => {
+                        if (err) throw err;
+                        log(chalk.green('Success! Employee manager updated!'))
+                        start();
+                    });
+                } else {
+                    const query = `UPDATE employee SET manager_id = ${response.managerName} WHERE id = ${id}`
+                    connection.query(query, (err, res) => {
+                        if (err) throw err;
+                        log(chalk.green('Success! Employee manager updated!'))
+                        start();
+                    });
+                }
+            })
+    })
+}
 
 
 // DEPARTMENT MANAGEMENT
 function departments() {
     console.log('\n\n--------Department Menu--------\n');
-
     inquirer
         .prompt({
             name: 'option',
@@ -280,23 +471,21 @@ function viewEmployeeDepartment() {
     const query = 'SELECT * FROM department';
     connection.query(query, (err, res) => {
         if (err) throw err;
-
         inquirer
-            .prompt([{
+            .prompt({
                 type: 'list',
                 message: `Which department would you like to view?`,
                 name: 'departmentName',
                 choices() {
-                    const choiceList = ['Cancel'];
+                    const choiceList = ['CANCEL'];
                     res.forEach(({ department_name }) => {
                         choiceList.push(department_name);
                     });
                     return choiceList;
                 },
-            },
-            ])
+            })
             .then((response) => {
-                if (response.departmentName == 'Cancel') {
+                if (response.departmentName == 'CANCEL') {
                     departments();
                 } else {
                     viewEmployeeByDepartment(response);
@@ -324,7 +513,6 @@ function viewEmployeeByDepartment(response) {
 // ROLES MANAGEMENT
 function roles() {
     console.log('\n\n--------Roles Menu--------\n');
-
     inquirer
         .prompt({
             name: 'option',
@@ -369,14 +557,13 @@ function viewEmployeeRole() {
     const query = 'SELECT * FROM role';
     connection.query(query, (err, res) => {
         if (err) throw err;
-
         inquirer
             .prompt([{
                 type: 'list',
                 message: `Which role would you like to view?`,
                 name: 'role_name',
                 choices() {
-                    const choiceList = ['Cancel'];
+                    const choiceList = ['CANCEL'];
                     res.forEach(({ title }) => {
                         choiceList.push(title);
                     });
@@ -385,7 +572,7 @@ function viewEmployeeRole() {
             },
             ])
             .then((response) => {
-                if (response.role_name == 'Cancel') {
+                if (response.role_name == 'CANCEL') {
                     roles();
                 } else {
                     viewEmployeeByRole(response);
