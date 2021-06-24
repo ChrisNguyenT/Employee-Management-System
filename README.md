@@ -13,6 +13,9 @@
   Run 'npm install' and 'node index.js'
   ## Usage:
   Use the provided sql file to seed your database with filler data and then run 'node index.js' to begin the commandline prompts. You will be given options on how to navigate and make changes.
+  
+  ![Screenshot](./images/screen.png)
+  [Demo](https://drive.google.com/file/d/1Z8oCwZQR3k-z3SSkTCn5ErlL3xphYz_d/view)
   ## License:
   
   Copyright © Thang Nguyen. All rights reserved. 
